@@ -103,6 +103,10 @@ Metadata:
       RecoveryGracePeriod:
         default: Recovery Grace Period
 Parameters:
+  PermissionBoundaryArn:
+    Description: "(Optional) ARN of the IAM Permission Boundary policy to apply to all created IAM roles."
+    Type: String
+    Default: ""
   S3BucketName:
     Description: "S3 Bucket Name where code is located, see the documentation for bucket names https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html"
     Type: String
@@ -214,6 +218,7 @@ Parameters:
     Type: String
     Description: "Please enter Subnet Id for corresponding VPC  for Lambda Functions"
 Conditions:
+  hasPermissionBoundary: !Not [!Equals [!Ref PermissionBoundaryArn, ""]]
   runInVPC: !Equals [!Ref RunLambdaInVPC, "True"]
 
 Resources:
@@ -239,6 +244,10 @@ Resources:
    NotifierFunctionExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      PermissionsBoundary: !If
+        - hasPermissionBoundary
+        - !Ref PermissionBoundaryArn
+        - !Ref "AWS::NoValue"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -306,6 +315,10 @@ Resources:
     Type: AWS::IAM::Role
     DependsOn: NotifierLambdaFunction
     Properties:
+      PermissionsBoundary: !If
+        - hasPermissionBoundary
+        - !Ref PermissionBoundaryArn
+        - !Ref "AWS::NoValue"
       RoleName: !Ref ExecutionRoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -411,6 +424,10 @@ Resources:
    AccountInventoryFunctionExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      PermissionsBoundary: !If
+        - hasPermissionBoundary
+        - !Ref PermissionBoundaryArn
+        - !Ref "AWS::NoValue"
       RoleName: !Ref InventoryExecutionRoleName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
