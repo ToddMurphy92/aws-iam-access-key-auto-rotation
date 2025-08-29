@@ -24,6 +24,10 @@ Metadata:
       IAMExemptionGroup:
         default: IAM Exemption Group
 Parameters:
+  PermissionBoundaryArn:
+    Description: "(Optional) ARN of the IAM Permission Boundary policy to apply to all created IAM roles."
+    Type: String
+    Default: ""
   IAMRoleName:
     Description: "Enter the name of IAM Role that the main ASA-iam-key-auto-rotation-and-notifier-solution.yaml CloudFormation template will assume."
     Type: String
@@ -40,6 +44,8 @@ Parameters:
     Description: "Manage IAM Key Rotation exemptions via an IAM Group. Enter the IAM Group name being used to facilitate IAM accounts excluded from auto-key rotation."
     Type: String
     Default: IAMKeyRotationExemptionGroup
+Conditions:
+  hasPermissionBoundary: !Not [!Equals [!Ref PermissionBoundaryArn, ""]]
 
 Resources:
   ##################################################################
@@ -49,6 +55,10 @@ Resources:
   ASAIAMAssumedRole:
     Type: AWS::IAM::Role
     Properties:
+      PermissionsBoundary: !If
+        - hasPermissionBoundary
+        - !Ref PermissionBoundaryArn
+        - !Ref "AWS::NoValue"
       RoleName: !Ref IAMRoleName
       Description: !Sub "IAM Assume Role used by ${PrimaryAccountID}'s ASA-IAM-Access-Key-Rotation-Function Lambda. This role is used to inspect and rotate IAM Keys that are violating the company's key rotation policy."
       AssumeRolePolicyDocument:
