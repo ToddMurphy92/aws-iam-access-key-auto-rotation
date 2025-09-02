@@ -44,7 +44,15 @@ Parameters:
     Description: "Enter the primary/deployment AWS Account ID that will you will be deploying the ASA-iam-key-auto-rotation-and-notifier-solution.yaml CloudFormation template to."
     Type: String
     Default: ""
+  DeploymentOption:
+    Description: "Choose where to store credentials: 'Member' for member account Secrets Manager, 'Central' for central account Secrets Manager."
+    Type: String
+    AllowedValues:
+      - Member
+      - Central
+    Default: Member
 Conditions:
+  CentralSecretsManager: !Equals [!Ref DeploymentOption, "Central"]
   hasPermissionBoundary: !Not [!Equals [!Ref PermissionBoundaryArn, ""]]
 
 Resources:
@@ -70,7 +78,9 @@ Resources:
               - !Sub arn:${AWS::Partition}:iam::${PrimaryAccountID}:role/${AccountExecutionRoleName}
               - !Sub arn:${AWS::Partition}:iam::${PrimaryAccountID}:role/${RotationExecutionRoleName}
           Action: sts:AssumeRole
-      Policies:
+      Policies: !If
+        - CentralSecretsManager
+        - 
           - PolicyName: AllowListOrgAccounts
             PolicyDocument:
               Version: "2012-10-17"
@@ -95,4 +105,15 @@ Resources:
                     - secretsmanager:ReplicateSecretToRegions
                   Resource:
                     - !Sub "arn:${AWS::Partition}:secretsmanager:*:${AWS::AccountId}:secret:*"
+        - 
+          - PolicyName: AllowListOrgAccounts
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - organizations:ListAccounts
+                    - organizations:ListAccountsForParent
+                    - organizations:ListChildren
+                  Resource: "*"
       Path: /
